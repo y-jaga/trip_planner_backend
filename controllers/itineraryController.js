@@ -1,4 +1,9 @@
 const axios = require("axios");
+const {
+  validateFlightQueryParams,
+  validateHotelsQueryParams,
+  validateSitesQueryParams,
+} = require("../validations/index");
 
 const axiosInstance = axios.create({
   baseURL: process.env.MICROSERVICE_BASE_URL,
@@ -8,6 +13,57 @@ const axiosInstance = axios.create({
     CLIENT_SECRET: process.env.CLIENT_SECRET,
   },
 });
+
+const getFilghtsByOriginAndDestination = async (req, res) => {
+  const errors = validateFlightQueryParams(req.query);
+
+  if (errors.length > 0) return res.status(400).json({ errors });
+
+  try {
+    const { origin, destination } = req.query;
+    const response = await axiosInstance.get(
+      `/flights/search?origin=${origin}&destination=${destination}`
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch flight details." });
+  }
+};
+
+const getHotelsByLocation = async (req, res) => {
+  const errors = validateHotelsQueryParams(req.query);
+
+  if (errors.length > 0) return res.status(400).json({ errors });
+
+  try {
+    const { location } = req.query;
+    const response = await axiosInstance.get(
+      `/hotels/search?location=${location}`
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch hotels details." });
+  }
+};
+
+const getSitesByLocation = async (req, res) => {
+  const errors = validateSitesQueryParams(req.query);
+
+  if (errors.length > 0) return res.status(400).json({ errors });
+
+  try {
+    const { location } = req.query;
+    const response = await axiosInstance.get(
+      `/sites/search?location=${location}`
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch sites details." });
+  }
+};
 
 const getFlights = async (req, res) => {
   try {
@@ -90,9 +146,13 @@ const getSites = async (req, res) => {
       return res
         .status(429)
         .json({ error: "Rate limit exceeded. Please try again later." });
-    }
-    else if(error.response.status === 500 && error.response.data.error === "Simulated error for testing purposes.") {
-      return res.status(500).json({ error : "Simulated error for testing purposes."})
+    } else if (
+      error.response.status === 500 &&
+      error.response.data.error === "Simulated error for testing purposes."
+    ) {
+      return res
+        .status(500)
+        .json({ error: "Simulated error for testing purposes." });
     }
 
     res.status(500).json({ error: "Failed to fetch sites." });
@@ -103,4 +163,7 @@ module.exports = {
   getFlights,
   getHotels,
   getSites,
+  getFilghtsByOriginAndDestination,
+  getHotelsByLocation,
+  getSitesByLocation
 };
